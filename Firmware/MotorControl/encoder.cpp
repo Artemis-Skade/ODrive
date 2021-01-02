@@ -366,6 +366,7 @@ bool Encoder::abs_spi_start_on_error_transaction() {
             set_error(ERROR_ABS_SPI_NOT_READY);
             return false;
         }
+        error_readout_ = true;
         abs_spi_dma_tx_[0] = 0x4001; // read request of register ERRFL according to AS5047p datasheet
         abs_spi_dma_tx_[1] = 0xC000; // nop command during the readout with correct parity
         HAL_GPIO_WritePin(abs_spi_cs_port_, abs_spi_cs_pin_, GPIO_PIN_RESET);
@@ -399,7 +400,7 @@ void Encoder::abs_spi_cb(){
     switch (mode_) {
         case MODE_SPI_ABS_AMS: {
             if (error_readout_) {
-                error_readout_ = 0;
+                error_readout_ = false;
                 abs_spi_dma_tx_[0] = 0xFFFF; //clean transmit register
                 uint16_t rawVal = abs_spi_dma_rx_[1];
                 // check if parity is correct (even), error flag should be set anyways
@@ -416,7 +417,6 @@ void Encoder::abs_spi_cb(){
                 }
                 // check if error flag clear
                 if (((rawVal >> 14) & 1)) {
-                    error_readout_ = 1;
                     abs_spi_start_on_error_transaction();  //start attempt to clear error_register
                     return;                                //still discard this value, just in case
                 }
