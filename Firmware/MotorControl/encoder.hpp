@@ -45,7 +45,7 @@ public:
 
     Encoder(const EncoderHardwareConfig_t& hw_config,
             Config_t& config, const Motor::Config_t& motor_config);
-    
+
     void setup();
     void set_error(Error error);
     bool do_checks();
@@ -93,7 +93,7 @@ public:
     bool pos_estimate_valid_ = false;
     bool vel_estimate_valid_ = false;
 
-    int16_t tim_cnt_sample_ = 0; // 
+    int16_t tim_cnt_sample_ = 0; //
     // Updated by low_level pwm_adc_cb
     uint8_t hall_state_ = 0x0; // bit[0] = HallA, .., bit[2] = HallC
     float sincos_sample_s_ = 0.0f;
@@ -103,14 +103,17 @@ public:
     bool abs_spi_start_transaction();
     void abs_spi_cb();
     void abs_spi_cs_pin_init();
-    uint16_t abs_spi_dma_tx_[1] = {0xFFFF};
-    uint16_t abs_spi_dma_rx_[1];
+    uint16_t abs_spi_dma_tx_[2] = {0xFFFF};
+    uint16_t abs_spi_dma_rx_[2];
     bool abs_spi_pos_updated_ = false;
     Mode mode_ = MODE_INCREMENTAL;
     GPIO_TypeDef* abs_spi_cs_port_;
     uint16_t abs_spi_cs_pin_;
     uint32_t abs_spi_cr1;
     uint32_t abs_spi_cr2;
+    uint16_t abs_spi_dma_tx_[1] = {0xFFFF};
+    uint16_t abs_spi_dma_rx_[1];
+    Stm32SpiArbiter::SpiTask spi_task_;
 
     constexpr float getCoggingRatio(){
         return 1.0f / 3600.0f;

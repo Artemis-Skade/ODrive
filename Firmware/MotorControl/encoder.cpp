@@ -227,7 +227,7 @@ bool Encoder::run_offset_calibration() {
         axis_->motor_.log_timing(TIMING_LOG_ENC_CALIB);
 
         encvaluesum += shadow_count_;
-        
+
         return ++i < num_steps;
     });
     if (axis_->error_ != Axis::ERROR_NONE)
@@ -267,7 +267,7 @@ bool Encoder::run_offset_calibration() {
         axis_->motor_.log_timing(TIMING_LOG_ENC_CALIB);
 
         encvaluesum += shadow_count_;
-        
+
         return ++i < num_steps;
     });
     if (axis_->error_ != Axis::ERROR_NONE)
@@ -360,6 +360,28 @@ bool Encoder::abs_spi_start_transaction(){
     return true;
 }
 
+bool Encoder::abs_spi_start_on_error_transaction() {
+    if (mode_ & MODE_FLAG_ABS){
+        if (Stm32SpiArbiter::acquire_task(&spi_task_)) {
+            abs_spi_dma_tx_[0] = 0x4001; // read request of register ERRFL according to AS5047p datasheet
+            abs_spi_dma_tx_[1] = 0xC000; // nop command during the readout with correct parity
+
+            spi_task_.ncs_gpio = abs_spi_cs_gpio_;
+            spi_task_.tx_buf = (uint8_t*)abs_spi_dma_tx_;
+            spi_task_.rx_buf = (uint8_t*)abs_spi_dma_rx_;
+            spi_task_.length = 2;
+            spi_task_.on_complete = [](void* ctx, bool success) { ((Encoder*)ctx)->abs_spi_on_error_cb(success); };
+            spi_task_.on_complete_ctx = this;
+            spi_task_.next = nullptr;
+
+            spi_arbiter_->transfer_async(&spi_task_);
+        } else {
+            return false;
+        }
+    }
+    return true;
+}
+
 uint8_t ams_parity(uint16_t v) {
     v ^= v >> 8;
     v ^= v >> 4;
@@ -389,6 +411,11 @@ void Encoder::abs_spi_cb(){
             if (ams_parity(rawVal) || ((rawVal >> 14) & 1)) {
                 return;
             }
+            // check if error flag clear
+            if (((rawVal >> 14) & 1)) {
+                abs_spi_start_on_error_transaction(); //start attempt to clear error_register
+                goto done; //still discard this value, just in case
+            }
             pos = rawVal & 0x3fff;
         } break;
 
@@ -417,6 +444,31 @@ void Encoder::abs_spi_cb(){
     if (config_.pre_calibrated) {
         is_ready_ = true;
     }
+}
+
+void Encoder::abs_spi_on_error_cb(bool success) {
+    if (!success) {
+        goto done;
+    }
+
+    switch (mode_) {
+        case MODE_SPI_ABS_AMS: {
+            uint16_t rawVal = abs_spi_dma_rx_[1];
+            // check if parity is correct (even), error flag should be set anyways
+            if (ams_parity(rawVal)) {
+                goto done;
+            }
+            //TODO: maybe analyze error code here would be in abs_spi_dma_rx_[1]
+        } break;
+        default: {
+            set_error(ERROR_UNSUPPORTED_ENCODER_MODE);
+            goto done;
+        } break;
+    }
+
+    done:
+    abs_spi_dma_tx_[0] = 0xFFFF; //clean transmit register
+    Stm32SpiArbiter::release_task(&spi_task_);
 }
 
 void Encoder::abs_spi_cs_pin_init(){
