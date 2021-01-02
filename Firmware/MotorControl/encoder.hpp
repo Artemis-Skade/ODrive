@@ -101,19 +101,18 @@ public:
 
     bool abs_spi_init();
     bool abs_spi_start_transaction();
+    bool abs_spi_start_on_error_transaction();
     void abs_spi_cb();
     void abs_spi_cs_pin_init();
     uint16_t abs_spi_dma_tx_[2] = {0xFFFF};
     uint16_t abs_spi_dma_rx_[2];
     bool abs_spi_pos_updated_ = false;
+    bool error_readout_ = false;
     Mode mode_ = MODE_INCREMENTAL;
     GPIO_TypeDef* abs_spi_cs_port_;
     uint16_t abs_spi_cs_pin_;
     uint32_t abs_spi_cr1;
     uint32_t abs_spi_cr2;
-    uint16_t abs_spi_dma_tx_[1] = {0xFFFF};
-    uint16_t abs_spi_dma_rx_[1];
-    Stm32SpiArbiter::SpiTask spi_task_;
 
     constexpr float getCoggingRatio(){
         return 1.0f / 3600.0f;
