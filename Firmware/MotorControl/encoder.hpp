@@ -134,15 +134,17 @@ public:
     float sincos_sample_c_ = 0.0f;
 
     bool abs_spi_start_transaction();
+    bool abs_spi_start_on_error_transaction();
     void abs_spi_cb(bool success);
+    void abs_spi_on_error_cb(bool success);
     void abs_spi_cs_pin_init();
     bool abs_spi_pos_updated_ = false;
     Mode mode_ = MODE_INCREMENTAL;
     Stm32Gpio abs_spi_cs_gpio_;
     uint32_t abs_spi_cr1;
     uint32_t abs_spi_cr2;
-    uint16_t abs_spi_dma_tx_[1] = {0xFFFF};
-    uint16_t abs_spi_dma_rx_[1];
+    uint16_t abs_spi_dma_tx_[2] = {0xFFFF};
+    uint16_t abs_spi_dma_rx_[2];
     Stm32SpiArbiter::SpiTask spi_task_;
 
     constexpr float getCoggingRatio(){
