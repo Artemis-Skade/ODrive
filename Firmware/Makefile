@@ -68,7 +68,7 @@ gdb-bmp: all
 		--ex 'load' $(FIRMWARE)
 
 dfu: all
-	python ../tools/odrivetool $(if $(value SERIAL_NUMBER),--serial-number $(SERIAL_NUMBER),) dfu $(FIRMWARE_HEX)
+	python3 ../tools/odrivetool $(if $(value SERIAL_NUMBER),--serial-number $(SERIAL_NUMBER),) dfu $(FIRMWARE_HEX)
 
 flash: flash-stlink2
 gdb: gdb-stlink2

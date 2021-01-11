@@ -594,8 +594,9 @@ void Encoder::abs_spi_cb(bool success) {
             }
             // check if error flag clear
             if (((rawVal >> 14) & 1)) {
-                abs_spi_start_on_error_transaction(); //start attempt to clear error_register
-                goto done; //still discard this value, just in case
+                // ignore
+                //abs_spi_start_on_error_transaction(); //start attempt to clear error_register
+                //goto done; //still discard this value, just in case
             }
             pos = rawVal & 0x3fff;
         } break;
